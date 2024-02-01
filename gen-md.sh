@@ -1,5 +1,7 @@
 #!/bin/sh
 
+AWK=gawk
+
 ### Generates markdown for exported types and functions from an erlang
 ### module.
 ###
@@ -25,7 +27,7 @@
 ### highlight comments in red, but unfortunately github markdown removes
 ### all inline css.
 extract_exported() {
-    cat $1 | awk -v WHAT=$2 '
+    cat $1 | ${AWK} -v WHAT=$2 '
     function print_exported(str) {
         # split on xxx/ (all end up in seps)
         split(str, a, "[a-z_]+/[0-9]+", seps);
@@ -41,11 +43,11 @@ extract_exported() {
             skip = 1;
         }
     }
-    
+
     BEGIN {
         skip = 1;
     }
-    
+
     $0 ~ ("^-" WHAT "\\(") {
         skip = 0;
         print_exported($0)
@@ -58,7 +60,7 @@ extract_exported() {
 }
 
 extract_def() {
-    cat $1 | awk -v $2=$3 '
+    cat $1 | ${AWK} -v $2=$3 '
     ### Extract the given Erlang type or function definition, and
     ### convert all type references to relative links.
 
@@ -66,7 +68,7 @@ extract_def() {
         sub("%.*", "<span style=\"color:indianred\">&</span>", str);
         return str;
     }
-    
+
     function print_with_links(str) {
         ## convert all type references to links
         split(str, a, "[a-z_]+\\([^\\).]?\\)", seps);
@@ -80,22 +82,22 @@ extract_def() {
                        gensub("\\(.*", "", 1, seps[j]),
                        seps[j]);
             }
-    
+
             i++;
         }
         print a[i];
     }
-    
+
     BEGIN {
         skip = 1;
         k = 1;
-    
+
         if (FUNC != "") {
             split(FUNC, a, "/")
             FNAME = a[1]
             ARITY = a[2]
         }
-    
+
         builtins["any()"] = 1
         builtins["arity()"] = 1
         builtins["atom()"] = 1
@@ -136,9 +138,9 @@ extract_def() {
         builtins["string()"] = 1
         builtins["term()"] = 1
         builtins["timeout()"] = 1
-    
+
     }
-    
+
     ## special annotation for multi-arity functions
     $0 ~ ("^%% @" FNAME "/" ARITY) {
        found_func = 1;
@@ -167,7 +169,7 @@ extract_def() {
         k++;
         next;
     }
-    
+
     ## this is the type we are looking for
     $0 ~ ("^-type " TYPE "\\(") {
         skip = 0;
@@ -188,10 +190,10 @@ extract_def() {
             skip = 1;
             printf("</code></pre>\n");
         }
-    
+
         next;
     }
-    
+
     ## this is the function we are looking for
     found_func == 1 || $0 ~ ("^-spec " FNAME "\\(") {
         found_func = 0;
@@ -211,14 +213,14 @@ extract_def() {
 
         next;
     }
-    
+
     ## if we end up here we delete all comments collected so far
     {
         for (c in comments) {
             delete comments[c]
         }
     }
-    
+
     ## end of the type
     skip == 0 && TYPE != "" && /\.$/ {
         $0 = colorize_comment($0);
@@ -230,7 +232,7 @@ extract_def() {
         printf("</code></pre>\n");
         next;
     }
-    
+
     ## end of the function spec
     skip == 0 && FUNC != "" && /\.$/ {
         $0 = colorize_comment($0);
@@ -243,7 +245,7 @@ extract_def() {
         printf("</code></pre>\n");
         next;
     }
-    
+
     ## end of comments between -spec and function definition
     print_comments == 1 && $0 ~ ("^" FNAME "\\(") {
         print_comments = 0;
@@ -262,7 +264,7 @@ extract_def() {
 }
 
 extract_mod() {
-    cat $1 | awk '
+    cat $1 | ${AWK} '
     ### Extract the module name
 
     /^-module/ { print gensub("^-module\\(([a-z]*)\\).*", "\\1", 1); exit 0; }
@@ -271,7 +273,7 @@ extract_mod() {
 
 
 extract_mod_descr() {
-    cat $1 | awk '
+    cat $1 | ${AWK} '
     ### Extract the module description, which is the text in comments
     ### before the -module declaration.
 
