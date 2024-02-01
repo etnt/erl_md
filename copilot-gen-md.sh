@@ -2,6 +2,9 @@
 
 # Match a type definition
 /^ *-type/ {
+    if (in_type || in_spec) {
+        print "```"
+    }
     print "\n## Type: " $2 "\n```erlang"
     print $0
     in_type = 1
@@ -10,6 +13,9 @@
 
 # Match a function definition
 /^ *-spec/ {
+    if (in_type || in_spec) {
+        print "```"
+    }
     print "\n## Function: " $2 "\n```erlang"
     print $0
     in_spec = 1
@@ -30,5 +36,12 @@
         print "```"
         in_type = 0
         in_spec = 0
+    }
+}
+
+# Add ending triple back-quote at the end of file
+END {
+    if (in_type || in_spec) {
+        print "```"
     }
 }
